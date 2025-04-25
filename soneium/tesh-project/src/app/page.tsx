@@ -21,11 +21,12 @@ import {
   DialogTrigger,
 } from "@/app/components/ui/dialog"
 import Image from "next/image"
+import { PrivyProvider, usePrivy } from "@privy-io/react-auth"
 
-export default function Home() {
+// Create a component for the main content to use Privy hooks
+function MainContent() {
   const [amount, setAmount] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
-  const [walletConnected, setWalletConnected] = useState(false)
   const [hasStaked, setHasStaked] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -34,7 +35,14 @@ export default function Home() {
   const [pageLoaded, setPageLoaded] = useState(false)
   const [totalSaved, setTotalSaved] = useState(0)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const walletAddress = "0x2b9...9055"
+  
+  // Use Privy hooks
+  const { login, authenticated, user, logout, ready } = usePrivy()
+  
+  // Get wallet address from Privy user
+  const walletAddress = user?.wallet?.address 
+    ? `${user.wallet.address.substring(0, 4)}...${user.wallet.address.substring(user.wallet.address.length - 4)}`
+    : "0x2b9...9055"
 
   // Animation on first load
   useEffect(() => {
@@ -42,18 +50,18 @@ export default function Home() {
   }, [])
 
   const handleConnectWallet = () => {
-    setWalletConnected(true)
+    login()
   }
 
   const handleDisconnectWallet = () => {
-    setWalletConnected(false)
+    logout()
     if (hasStaked) {
       setHasStaked(false)
     }
   }
 
   const handleStake = () => {
-    if (amount && walletConnected) {
+    if (amount && authenticated) {
       setIsLoading(true)
       setProgress(0)
 
@@ -79,7 +87,7 @@ export default function Home() {
   }
 
   const handleWithdraw = () => {
-    if (withdrawAmount && walletConnected && Number(withdrawAmount) <= totalSaved) {
+    if (withdrawAmount && authenticated && Number(withdrawAmount) <= totalSaved) {
       setIsWithdrawing(true)
       setWithdrawProgress(0)
 
@@ -113,6 +121,15 @@ export default function Home() {
     setWithdrawAmount(totalSaved.toString())
   }
 
+  // Show loading state while Privy is initializing
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-[#020617] text-white flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-[#0075FF]" />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#020617] text-white overflow-x-hidden">
       {/* Header */}
@@ -138,7 +155,7 @@ export default function Home() {
         </div>
 
         <div>
-          {walletConnected ? (
+          {authenticated ? (
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 bg-[#5928B1]/20 border border-[#5928B1] rounded-full pr-2 pl-1 py-1">
                 <Avatar className="h-8 w-8 border-2 border-[#0075FF]">
@@ -487,7 +504,7 @@ export default function Home() {
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={handleStake}
-                  disabled={!amount || !walletConnected}
+                  disabled={!amount || !authenticated}
                   className="w-full py-6 text-lg font-medium bg-gradient-to-r from-[#0047FF] to-[#00D1FF] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white"
                 >
                   ¡Ahorrar y ganar!
@@ -541,5 +558,24 @@ export default function Home() {
         </div>
       </footer>
     </div>
+  )
+}
+
+// Main component that wraps the app with PrivyProvider
+export default function Home() {
+  return (
+    <PrivyProvider
+      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || "cm9x9cb4v00cflb0o09s0560u"}
+      config={{
+        loginMethods: ["email", "wallet"],
+        appearance: {
+          theme: "dark",
+          accentColor: "#0047FF",
+          showWalletLoginFirst: true,
+        },
+      }}
+    >
+      <MainContent />
+    </PrivyProvider>
   )
 }
