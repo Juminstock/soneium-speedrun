@@ -6,9 +6,8 @@ import { ThemeProvider } from "@/app/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "MXNStake - Ahorra en $MXN y gana recompensas",
-  description: "Ahorra en $MXN digital en Soneium Network y gana recompensas diarias",
-    generator: 'v0.dev'
+  title: "Astar savings - Ahorra en $MXN y gana recompensas",
+  description: "Ahorra en $MXN digital en Astar & Soneium y gana recompensas diarias"
 }
 
 export default function RootLayout({
